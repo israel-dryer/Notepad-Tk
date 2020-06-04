@@ -55,7 +55,8 @@ class Notepad(tk.Tk):
         self.menu_file.add_command(label='Exit', command=self.quit_application)
         
         # edit menu
-        self.menu_edit.add_command(label='Undo', accelerator='Ctrl+Z', command=None)
+        self.menu_edit.add_command(label='Undo', accelerator='Ctrl+Z', command=self.undo_edit)
+        self.menu_edit.add_command(lable='Redo', accelerator='Ctrl+Y', command=self.redo_edit)
         self.menu_edit.add_separator()
         self.menu_edit.add_command(label='Cut', accelerator='Ctrl+X', command=None)
         self.menu_edit.add_command(label='Copy', accelerator='Ctrl+C', command=None)
@@ -88,8 +89,7 @@ class Notepad(tk.Tk):
 
         # setup multiline text widget
         self.yscrollbar = tk.Scrollbar(self)
-        self.multiline = tk.Text(self, wrap=tk.WORD, font='-size 12', yscrollcommand=self.yscrollbar.set, padx=5, pady=10)
-
+        self.multiline = tk.Text(self, wrap=tk.WORD, font='-size 12', undo=True, maxundo=10, yscrollcommand=self.yscrollbar.set, padx=5, pady=10)
         # set default tab size to 4 characters
         font = tkfont.Font(font=self.multiline['font'])
         tab_width = font.measure(' ' * 4)
@@ -166,6 +166,19 @@ class Notepad(tk.Tk):
         self.title(self.file.name + " - Notepad")
 
     #---EDIT MENU CALLBACKS------------------------------------------------------------------------
+    def undo_edit(self):
+        """Undo the last edit in the stack"""
+        try:
+            self.multiline.edit_undo()
+        except tk.EXCEPTION:
+            pass
+
+    def redo_edit(self):
+        """Redo the last edit in the stack"""
+        try:
+            self.multiline.edit_redo()
+        except tk.EXCEPTION:
+            pass
 
     def get_datetime(self):
         """insert date and time at cursor position"""
