@@ -1,23 +1,3 @@
-"""
-    Menubar
-        File
-            New (CTRL+N), Open(CTRL+O), Save(CTRL+S), SaveAs, 
-            ---, Exit
-        Edit
-            Undo(CTRL+Z), 
-            ---, Cut(CTRL+X), Copy(CTRL+C), Paste(CTRL+V), Delete(Del)
-            ---, Find(CTRL+F), FindNext(F3), Replace(CTRL+H), GoTo(CTRL+G)
-            ---, SelectAll(CTRL+A), TimeDate(F5)
-        Format
-            WordWrap, Font...
-        Help
-            ViewHelp
-            About
-
-    Window + Scrollbar
-"""
-# http://effbot.org/tkinterbook/text.htm
-
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import filedialog, messagebox
