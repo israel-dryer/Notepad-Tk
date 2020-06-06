@@ -3,6 +3,7 @@ from tkinter import font as tkfont
 from tkinter import filedialog, messagebox
 import pathlib
 import datetime
+from itertools import cycle
 
 class Notepad(tk.Tk):
     """A notepad application"""
@@ -11,11 +12,16 @@ class Notepad(tk.Tk):
         #self.tk_setPalette('#e6e6ea')
         self.iconbitmap('Notepad.ico')
 
-        # general app variables
+        # file variables
         self.file = pathlib.Path.cwd() / 'untitled.txt'
         self.file_defaults = {
             'defaultextension': 'txt', 
             'filetypes': [('Text', ['txt', 'text']), ('All Files', '.*')]}
+
+        # find search replace variables
+        self.query = None
+        self.matches = None
+        self.findnext = None
 
         # main menu setup
         self.menu = tk.Menu(self)
@@ -41,8 +47,8 @@ class Notepad(tk.Tk):
         self.menu_edit.add_command(label='Copy', accelerator='Ctrl+C', command=self.text_copy)
         self.menu_edit.add_command(label='Paste', accelerator='Ctrl+V', command=self.text_paste)
         self.menu_edit.add_separator()
-        self.menu_edit.add_command(label='Find', accelerator='Ctrl+F', command=lambda: FindTextTool(self))
-        self.menu_edit.add_command(label='Find Next', accelerator='F3', command=None)
+        self.menu_edit.add_command(label='Find', accelerator='Ctrl+F', command=self.ask_find_next)
+        self.menu_edit.add_command(label='Find Next', accelerator='F3', command=self.find_match_list)
         self.menu_edit.add_command(label='Replace', accelerator='Ctrl+H', command=None)
         self.menu_edit.add_separator()
         self.menu_edit.add_command(label='Select All', accelerator='Ctrl+A', command=None)
@@ -81,6 +87,9 @@ class Notepad(tk.Tk):
         # pack all widget to screen
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.multiline.pack(fill=tk.BOTH, expand=tk.YES)
+
+        # general callback binding
+        self.bind("<F3>", self.find_match_list)
 
         self.update_title()
 
@@ -183,72 +192,78 @@ class Notepad(tk.Tk):
 
     def get_datetime(self):
         """insert date and time at cursor position"""
-        self.multiline.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))        
+        self.multiline.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))  
 
-class FindTextTool(tk.Toplevel):
-    def __init__(self, master):
-        super().__init__(master)
-        self.root = master
-        self.title('Find')
-        self.wm_attributes('-topmost', 'true', '-toolwindow', 'true')
-        tk.Label(self, text='Find what:', underline=2).grid(row=0, column=0, padx=(10, 5), pady=(10, 0))
-        self.input = tk.Entry(self, width=30)
-        self.btn_next = tk.Button(self, text='Find Next', underline=0, command=self.find_all_matches)
-        self.btn_cancel = tk.Button(self, text='Cancel')
+    def ask_find_next(self):
+        """Create find next popup widget"""
+        self.findnext = FindNextPopup(self)
+        self.findnext.btn_next.bind("<Button-1>", self.find_match_list)
 
-        self.dir_var = tk.IntVar()
-        self.dir_var.set(1)
-        self.dir_frame = tk.LabelFrame(self, text='Direction')
-        self.dir_up = tk.Radiobutton(self.dir_frame, text='Up', underline=0, variable=self.dir_var, value=0)
-        self.dir_dw = tk.Radiobutton(self.dir_frame, text='Down', underline=0, variable=self.dir_var, value=1)
-        self.match_case = tk.Checkbutton(self, text='Match case', underline=7)
-
-        # add widgets to window
-        self.input.grid(row=0, column=1, columnspan=3, sticky=tk.EW, pady=(10, 0), padx=(5, 5))
-        self.btn_next.grid(row=0, column=4, sticky=tk.EW, pady=(10, 5), padx=(5, 10), ipadx=5)
-        self.btn_cancel.grid(row=1, column=4, sticky=tk.EW, pady=(5), padx=(5, 10), ipadx=5)
-        self.dir_frame.grid(row=1, column=2, rowspan=2, columnspan=2, sticky=tk.EW, pady=5, padx=10)
-        self.dir_up.pack(side=tk.LEFT)
-        self.dir_dw.pack(side=tk.LEFT)
-        self.match_case.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(0, 10), padx=10)
-        self.matches = []
-        self.query = None
-        self.input.focus_set()
-
-        # event bindings
-        self.btn_next.bind("<F3>", self.goto_next_match)
-
-    def find_all_matches(self):
-        """Find and highlight the next matching token from the entry widget"""
-        # check to see if a new query has initiated
-        new_query = self.input.get()
-        if self.query == new_query and self.matches:
-            self.goto_next_match()
+    def find_match_list(self, _=None):
+        """Find all available matches and store in list"""
+        # check for existing query
+        if not self.findnext:
+            self.ask_find_next()
+            return
+        # check for new query
+        new_query = self.findnext.input.get()
+        if self.query == new_query:
+            self.find_next_match()
         else:
             self.query = new_query
             matches = []
             start = 1.0
             while True:
-                pos_start = self.root.multiline.search(self.query, start, stopindex=tk.END)
+                pos_start = self.multiline.search(self.query, start, stopindex=tk.END)
                 pos_end = pos_start + f"+{len(self.query)}c"
                 if not pos_start:
                     break
                 matches.append([pos_start, pos_end])
                 start = pos_start + "+1c"
-            self.matches = iter(matches)
-            self.goto_next_match()
+            self.matches = cycle(matches)
+            self.find_next_match()
 
-    def goto_next_match(self, event=None):
-        """Goto next match in matches"""
-        try:
-            # remove existing tags
-            self.root.multiline.tag_remove(tk.SEL, 1.0, tk.END)
-            pos_start, pos_end = next(self.matches)
-            self.root.multiline.tag_add(tk.SEL, pos_start, pos_end)
-            self.root.multiline.mark_set(tk.INSERT, pos_start)
-            self.root.multiline.focus_set()
-        except StopIteration:
-            self.matches = None
+    def find_next_match(self, _=None):
+        """Find the next available match, otherwise find all matches"""
+        # remove existing tags
+        self.multiline.tag_remove(tk.SEL, 1.0, tk.END)
+        pos_start, pos_end = next(self.matches)
+        self.multiline.tag_add(tk.SEL, pos_start, pos_end)
+        self.multiline.mark_set(tk.INSERT, pos_start)
+        self.multiline.focus_set()
+
+class FindNextPopup(tk.Toplevel):
+    """A widget template for finding text within a document. The methods should be defined
+    in the master window"""
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.root = master
+        self.title('Find')
+        self.transient(master)
+        self.resizable(False, False)
+        self.wm_attributes('-topmost', 'true', '-toolwindow', 'true')
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+        self.focus_set()
+
+        # create widgets
+        lbl = tk.Label(self, text='Find what:', underline=2)
+        self.input = tk.Entry(self, width=30, font='-size 10')
+        self.btn_next = tk.Button(self, text='Find Next', width=10, underline=5)
+
+        # add widgets to window
+        lbl.grid(row=0, column=0, padx=(15, 2), pady=15)
+        self.input.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=15)
+        self.btn_next.grid(row=0, column=2, sticky=tk.EW, padx=(5, 15), pady=15)
+
+        # other variables
+        self.query = None
+        self.input.focus_set()
+
+    def cancel(self):
+        """Cancel the request and return control to main window"""
+        self.destroy()
+
 
 if __name__ == '__main__':
     notepad = Notepad()
