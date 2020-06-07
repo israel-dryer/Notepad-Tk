@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox
 import pathlib
 import datetime
 from findreplace import FindPopup, ReplacePopup
+from fontselect import FontSelector
 
 class Notepad(tk.Tk):
     """A notepad application"""
@@ -62,7 +63,7 @@ class Notepad(tk.Tk):
         self.menu_format.add_checkbutton(label='Word Wrap', variable=self.wrap_var, command=self.word_wrap)
         self.menu_format.add_checkbutton(label='Block Cursor', variable=self.block_var, command=self.block_cursor)
         self.menu_format.add_separator()
-        self.menu_format.add_command(label='Font...', command=None)
+        self.menu_format.add_command(label='Font...', command=self.ask_font_select)
 
         # help menu
         self.menu_help.add_command(label='View Help', command=None)
@@ -80,8 +81,9 @@ class Notepad(tk.Tk):
             autoseparator=True, yscrollcommand=self.yscrollbar.set, blockcursor=False, padx=5, pady=10)
         #self.yscrollbar.bind("<B1-Motion>", self.yscroll)            
         # set default tab size to 4 characters
-        font = tkfont.Font(font=self.text['font'])
-        tab_width = font.measure(' ' * 4)
+        self.font = tkfont.Font(family='Courier New', size=12, weight=tkfont.NORMAL, slant=tkfont.ROMAN, underline=False, overstrike=False)        
+        self.text.configure(font=self.font)
+        tab_width = self.font.measure(' ' * 4)
         self.text.configure(tabs=(tab_width,))
         self.text.insert(tk.END, self.file.read_text() if self.file.is_file() else '')
 
@@ -96,6 +98,7 @@ class Notepad(tk.Tk):
 
         # final setup
         self.update_title()
+
         self.eval('tk::PlaceWindow . center')
 
     #---SCROLLBAR CALLBACK-------------------------------------------------------------------------        
@@ -206,11 +209,11 @@ class Notepad(tk.Tk):
 
     def ask_find_next(self, event=None):
         """Create find next popup widget"""
-        self.findnext = FindPopup(self)
+        self.findnext = FindPopup(self, self.text)
 
     def ask_find_replace(self, event=None):
         """Create replace popup widget"""
-        self.findreplace = ReplacePopup(self)        
+        self.findreplace = ReplacePopup(self, self.text)        
 
     def select_all(self):
         """Select all text in the text widget"""
@@ -234,7 +237,13 @@ class Notepad(tk.Tk):
         if self.block_var.get():
             self.text.configure(blockcursor=True)
         else:
-            self.text.configure(blockcursor=False)            
+            self.text.configure(blockcursor=False)
+
+    def ask_font_select(self):
+        """Font selector popup"""
+        f = FontSelector(self)
+        tab_width = self.font.measure(' ' * 4)
+        self.text.configure(tabs=(tab_width,))        
 
  
 if __name__ == '__main__':

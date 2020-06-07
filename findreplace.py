@@ -8,9 +8,9 @@ import tkinter as tk
 class FindPopup(tk.Toplevel):
     """Find whole or partial words within a text widget"""
 
-    def __init__(self, master):
+    def __init__(self, master, text_widget):
         super().__init__(master)
-        self.text = master.text
+        self.text = text_widget
         self.title('Find')
         self.transient(master)
         self.resizable(False, False)
@@ -128,9 +128,9 @@ class FindPopup(tk.Toplevel):
 class ReplacePopup(tk.Toplevel):
     """Find and replace words within a text widget"""
 
-    def __init__(self, master):
+    def __init__(self, master, text_widget):
         super().__init__(master)
-        self.text = master.text
+        self.text = text_widget
         self.title('Find and Replace')
         self.transient(master)
         self.resizable(False, False)
@@ -274,8 +274,6 @@ class ReplacePopup(tk.Toplevel):
             if not start:
                 break
             self.text.replace(start, start + ' wordend', new_term)
-
-
 
 
 class TestWindow(tk.Tk):
