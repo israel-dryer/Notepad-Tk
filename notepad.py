@@ -3,7 +3,7 @@ from tkinter import font as tkfont
 from tkinter import filedialog, messagebox
 import pathlib
 import datetime
-from itertools import cycle
+from findreplace import FindPopup, ReplacePopup
 
 class Notepad(tk.Tk):
     """A notepad application"""
@@ -22,6 +22,7 @@ class Notepad(tk.Tk):
         self.query = None
         self.matches = None
         self.findnext = None
+        self.findreplace = None
 
         # main menu setup
         self.menu = tk.Menu(self)
@@ -48,8 +49,8 @@ class Notepad(tk.Tk):
         self.menu_edit.add_command(label='Paste', accelerator='Ctrl+V', command=self.text_paste)
         self.menu_edit.add_separator()
         self.menu_edit.add_command(label='Find', accelerator='Ctrl+F', command=self.ask_find_next)
-        self.menu_edit.add_command(label='Find Next', accelerator='F3', command=self.find_match_list)
-        self.menu_edit.add_command(label='Replace', accelerator='Ctrl+H', command=None)
+        self.menu_edit.add_command(label='Find Next', accelerator='F3', command=None)
+        self.menu_edit.add_command(label='Replace', accelerator='Ctrl+H', command=self.ask_find_replace)
         self.menu_edit.add_separator()
         self.menu_edit.add_command(label='Select All', accelerator='Ctrl+A', command=None)
         self.menu_edit.add_command(label='Time/Date', accelerator='F5', command=self.get_datetime)
@@ -74,25 +75,28 @@ class Notepad(tk.Tk):
         self.menu.add_cascade(label='Format', menu=self.menu_format)
         self.menu.add_cascade(label='Help', menu=self.menu_help)
 
-        # setup multiline text widget
+        # setup text text widget
         self.yscrollbar = tk.Scrollbar(self)
-        self.multiline = tk.Text(self, wrap=tk.WORD, font='-size 12', undo=True, maxundo=10,
+        self.text = tk.Text(self, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
             autoseparator=True, yscrollcommand=self.yscrollbar.set, blockcursor=False, padx=5, pady=10)
         # set default tab size to 4 characters
-        font = tkfont.Font(font=self.multiline['font'])
+        font = tkfont.Font(font=self.text['font'])
         tab_width = font.measure(' ' * 4)
-        self.multiline.configure(tabs=(tab_width,))
-        self.multiline.insert(tk.END, self.file.read_text() if self.file.is_file() else '')
+        self.text.configure(tabs=(tab_width,))
+        self.text.insert(tk.END, self.file.read_text() if self.file.is_file() else '')
 
         # pack all widget to screen
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.multiline.pack(fill=tk.BOTH, expand=tk.YES)
+        self.text.pack(fill=tk.BOTH, expand=tk.YES)
 
         # general callback binding
-        self.bind("<F3>", self.find_match_list)
+        # self.bind("<F3>", self.find_all_matches)
+        self.bind("<Control-f>", self.ask_find_next)
+        self.bind("<Control-h>", self.ask_find_replace)
 
+        # final setup
         self.update_title()
-
+        self.eval('tk::PlaceWindow . center')
 
     #---FILE MENU CALLBACKS------------------------------------------------------------------------
 
@@ -102,7 +106,7 @@ class Notepad(tk.Tk):
         self.confirm_changes()
 
         # reset text widget
-        self.multiline.delete(1.0, tk.END)
+        self.text.delete(1.0, tk.END)
         self.file = pathlib.Path.cwd() / 'untitled.txt'
         self.update_title()
 
@@ -114,9 +118,9 @@ class Notepad(tk.Tk):
         # open new file
         file = filedialog.askopenfilename(initialdir=self.file.parent, **self.file_defaults)
         if file:
-            self.multiline.delete(1.0, tk.END)  # delete existing content
+            self.text.delete(1.0, tk.END)  # delete existing content
             self.file = pathlib.Path(file)
-            self.multiline.insert(tk.END, self.file.read_text())
+            self.text.insert(tk.END, self.file.read_text())
             self.update_title()
 
     def save_file(self):
@@ -124,27 +128,27 @@ class Notepad(tk.Tk):
         if self.file.name == 'untitled.txt':
             file = filedialog.asksaveasfilename(initialfile=self.file, **self.file_defaults)
             self.file = pathlib.Path(file) if file else self.file
-        self.file.write_text(self.multiline.get(1.0, tk.END))
+        self.file.write_text(self.text.get(1.0, tk.END))
 
     def save_file_as(self):
         """Save the currently open file with a different name or location"""
         file = filedialog.asksaveasfilename(initialdir=self.file.parent, **self.file_defaults)
         if file:
             self.file = pathlib.Path(file)
-            self.file.write_text(self.multiline.get(1.0, tk.END))
+            self.file.write_text(self.text.get(1.0, tk.END))
             self.update_title()
 
     def confirm_changes(self):
         """Check to see if content has changed from original file; if so, confirm save"""
         if self.file.is_file():
             original = self.file.read_text()
-            current = self.multiline.get(1.0, tk.END)
+            current = self.text.get(1.0, tk.END)
             if original != current:
                 confirm = messagebox.askyesno(message="Save current file changes?")
                 if confirm:
                     self.save_file()
         # new unsaved document with content is prompted to save
-        elif self.multiline.count(1.0, tk.END)[0] > 1:
+        elif self.text.count(1.0, tk.END)[0] > 1:
             confirm = messagebox.askyesno(message="Save current document?")
             if confirm:
                 self.save_file()
@@ -162,109 +166,46 @@ class Notepad(tk.Tk):
     def undo_edit(self):
         """Undo the last edit in the stack"""
         try:
-            self.multiline.edit_undo()
+            self.text.edit_undo()
         except tk.EXCEPTION:
             pass
 
     def redo_edit(self):
         """Redo the last edit in the stack"""
         try:
-            self.multiline.edit_redo()
-        except tk.EXCEPTION:
+            self.text.edit_redo()
+        except tk.TclError:
             pass
 
     def text_copy(self):
         """Append selected text to the clipboard"""
-        selected = self.multiline.get(tk.SEL_FIRST, tk.SEL_LAST)
-        self.multiline.clipboard_clear()
-        self.multiline.clipboard_append(selected)
+        selected = self.text.get(tk.SEL_FIRST, tk.SEL_LAST)
+        self.text.clipboard_clear()
+        self.text.clipboard_append(selected)
 
     def text_paste(self):
         """Paste clipboard text into text widget at cursor"""
-        self.multiline.insert(tk.INSERT, self.multiline.clipboard_get())
+        self.text.insert(tk.INSERT, self.text.clipboard_get())
 
     def text_cut(self):
         """Cut selected text and append to clipboard"""
-        selected = self.multiline.get(tk.SEL_FIRST, tk.SEL_LAST)
-        self.multiline.delete(tk.SEL_FIRST, tk.SEL_LAST)
-        self.multiline.clipboard_clear()
-        self.multiline.clipboard_append(selected)
+        selected = self.text.get(tk.SEL_FIRST, tk.SEL_LAST)
+        self.text.delete(tk.SEL_FIRST, tk.SEL_LAST)
+        self.text.clipboard_clear()
+        self.text.clipboard_append(selected)
 
     def get_datetime(self):
         """insert date and time at cursor position"""
-        self.multiline.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))  
+        self.text.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))  
 
-    def ask_find_next(self):
+    def ask_find_next(self, event=None):
         """Create find next popup widget"""
-        self.findnext = FindNextPopup(self)
-        self.findnext.btn_next.bind("<Button-1>", self.find_match_list)
+        self.findnext = FindPopup(self)
 
-    def find_match_list(self, _=None):
-        """Find all available matches and store in list"""
-        # check for existing query
-        if not self.findnext:
-            self.ask_find_next()
-            return
-        # check for new query
-        new_query = self.findnext.input.get()
-        if self.query == new_query:
-            self.find_next_match()
-        else:
-            self.query = new_query
-            matches = []
-            start = 1.0
-            while True:
-                pos_start = self.multiline.search(self.query, start, stopindex=tk.END)
-                pos_end = pos_start + f"+{len(self.query)}c"
-                if not pos_start:
-                    break
-                matches.append([pos_start, pos_end])
-                start = pos_start + "+1c"
-            self.matches = cycle(matches)
-            self.find_next_match()
-
-    def find_next_match(self, _=None):
-        """Find the next available match, otherwise find all matches"""
-        # remove existing tags
-        self.multiline.tag_remove(tk.SEL, 1.0, tk.END)
-        pos_start, pos_end = next(self.matches)
-        self.multiline.tag_add(tk.SEL, pos_start, pos_end)
-        self.multiline.mark_set(tk.INSERT, pos_start)
-        self.multiline.focus_set()
-
-class FindNextPopup(tk.Toplevel):
-    """A widget template for finding text within a document. The methods should be defined
-    in the master window"""
-
-    def __init__(self, master):
-        super().__init__(master)
-        self.root = master
-        self.title('Find')
-        self.transient(master)
-        self.resizable(False, False)
-        self.wm_attributes('-topmost', 'true', '-toolwindow', 'true')
-        self.protocol("WM_DELETE_WINDOW", self.cancel)
-        self.focus_set()
-
-        # create widgets
-        lbl = tk.Label(self, text='Find what:', underline=2)
-        self.input = tk.Entry(self, width=30, font='-size 10')
-        self.btn_next = tk.Button(self, text='Find Next', width=10, underline=5)
-
-        # add widgets to window
-        lbl.grid(row=0, column=0, padx=(15, 2), pady=15)
-        self.input.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=15)
-        self.btn_next.grid(row=0, column=2, sticky=tk.EW, padx=(5, 15), pady=15)
-
-        # other variables
-        self.query = None
-        self.input.focus_set()
-
-    def cancel(self):
-        """Cancel the request and return control to main window"""
-        self.destroy()
-
-
+    def ask_find_replace(self, event=None):
+        """Create replace popup widget"""
+        self.findreplace = ReplacePopup(self)
+ 
 if __name__ == '__main__':
     notepad = Notepad()
     notepad.mainloop()
