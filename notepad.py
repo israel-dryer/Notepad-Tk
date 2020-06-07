@@ -49,10 +49,9 @@ class Notepad(tk.Tk):
         self.menu_edit.add_command(label='Paste', accelerator='Ctrl+V', command=self.text_paste)
         self.menu_edit.add_separator()
         self.menu_edit.add_command(label='Find', accelerator='Ctrl+F', command=self.ask_find_next)
-        self.menu_edit.add_command(label='Find Next', accelerator='F3', command=None)
         self.menu_edit.add_command(label='Replace', accelerator='Ctrl+H', command=self.ask_find_replace)
         self.menu_edit.add_separator()
-        self.menu_edit.add_command(label='Select All', accelerator='Ctrl+A', command=None)
+        self.menu_edit.add_command(label='Select All', accelerator='Ctrl+A', command=self.select_all)
         self.menu_edit.add_command(label='Time/Date', accelerator='F5', command=self.get_datetime)
 
         # format menu
@@ -60,8 +59,8 @@ class Notepad(tk.Tk):
         self.wrap_var.set(True)
         self.block_var = tk.IntVar()
         self.block_var.set(False)
-        self.menu_format.add_checkbutton(label='Word Wrap', variable=self.wrap_var, command=None)
-        self.menu_format.add_checkbutton(label='Block Cursor', variable=self.block_var, command=None)
+        self.menu_format.add_checkbutton(label='Word Wrap', variable=self.wrap_var, command=self.word_wrap)
+        self.menu_format.add_checkbutton(label='Block Cursor', variable=self.block_var, command=self.block_cursor)
         self.menu_format.add_separator()
         self.menu_format.add_command(label='Font...', command=None)
 
@@ -76,9 +75,10 @@ class Notepad(tk.Tk):
         self.menu.add_cascade(label='Help', menu=self.menu_help)
 
         # setup text text widget
-        self.yscrollbar = tk.Scrollbar(self)
+        self.yscrollbar = tk.Scrollbar(self, command=self.yscroll)
         self.text = tk.Text(self, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
             autoseparator=True, yscrollcommand=self.yscrollbar.set, blockcursor=False, padx=5, pady=10)
+        #self.yscrollbar.bind("<B1-Motion>", self.yscroll)            
         # set default tab size to 4 characters
         font = tkfont.Font(font=self.text['font'])
         tab_width = font.measure(' ' * 4)
@@ -97,6 +97,15 @@ class Notepad(tk.Tk):
         # final setup
         self.update_title()
         self.eval('tk::PlaceWindow . center')
+
+    #---SCROLLBAR CALLBACK-------------------------------------------------------------------------        
+
+    def yscroll(self, event, *args):
+        """Move scrollbar when slider is dragged or pointers are clicked"""
+        if event == 'moveto':
+            self.text.yview_moveto(*args)
+        else:
+            self.text.yview_scroll(*args)
 
     #---FILE MENU CALLBACKS------------------------------------------------------------------------
 
@@ -163,11 +172,12 @@ class Notepad(tk.Tk):
         self.title(self.file.name + " - Notepad")
 
     #---EDIT MENU CALLBACKS------------------------------------------------------------------------
+
     def undo_edit(self):
         """Undo the last edit in the stack"""
         try:
             self.text.edit_undo()
-        except tk.EXCEPTION:
+        except tk.TclError:
             pass
 
     def redo_edit(self):
@@ -194,17 +204,38 @@ class Notepad(tk.Tk):
         self.text.clipboard_clear()
         self.text.clipboard_append(selected)
 
-    def get_datetime(self):
-        """insert date and time at cursor position"""
-        self.text.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))  
-
     def ask_find_next(self, event=None):
         """Create find next popup widget"""
         self.findnext = FindPopup(self)
 
     def ask_find_replace(self, event=None):
         """Create replace popup widget"""
-        self.findreplace = ReplacePopup(self)
+        self.findreplace = ReplacePopup(self)        
+
+    def select_all(self):
+        """Select all text in the text widget"""
+        self.text.tag_add(tk.SEL, '1.0', tk.END)
+
+    def get_datetime(self):
+        """insert date and time at cursor position"""
+        self.text.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))
+
+    #---FORMAT MENU CALLBACKS------------------------------------------------------------------------
+
+    def word_wrap(self):
+        """Toggle word wrap in text widget"""
+        if self.wrap_var.get():
+            self.text.configure(wrap=tk.WORD)
+        else:
+            self.text.configure(wrap=tk.NONE)
+
+    def block_cursor(self):
+        """Toggle word wrap in text widget"""
+        if self.block_var.get():
+            self.text.configure(blockcursor=True)
+        else:
+            self.text.configure(blockcursor=False)            
+
  
 if __name__ == '__main__':
     notepad = Notepad()

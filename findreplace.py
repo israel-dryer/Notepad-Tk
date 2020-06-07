@@ -34,7 +34,7 @@ class FindPopup(tk.Toplevel):
         self.text_find.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=15)
         self.btn_next.grid(row=0, column=2, sticky=tk.EW, padx=(5, 15), pady=15)
         self.text_find.focus_set()
-        check_btn.grid(row=1, column=0, padx=15, columnspan=2, sticky=tk.EW)
+        check_btn.grid(row=1, column=0, padx=15, pady=(5, 15), columnspan=2, sticky=tk.EW)
 
         # other variables
         self.chars = 0
@@ -44,6 +44,9 @@ class FindPopup(tk.Toplevel):
         # configure text widget tags
         self.text.tag_configure('found', foreground='black', background='silver')
         self.text.tag_configure('found.focus', foreground='white', background='SystemHighlight')
+
+        # add additional bindings
+        self.bind("<Return>", self.ask_find_match)
 
     def cancel(self):
         """Cancel the request and return control to main window"""
@@ -63,7 +66,7 @@ class FindPopup(tk.Toplevel):
         self.text.tag_remove('found', '1.0', tk.END)
         self.text.tag_remove('found.focus', '1.0', tk.END)
 
-    def ask_find_match(self):
+    def ask_find_match(self, event=None):
         """Check for new searches, and route traffic by search types"""
         term = self.text_find.get()
         if term == '':
@@ -113,10 +116,12 @@ class FindPopup(tk.Toplevel):
             start, end = self.text.tag_nextrange('found', self.start, tk.END)
             self.text.tag_add('found.focus', start, end)
             self.text.mark_set(tk.INSERT, start)
+            self.text.see(start)
             self.start = end
         except ValueError:
             if self.start != '1.0':
                 self.start = '1.0'
+                self.text.see('1.0')
                 self.highlight_next_match()
 
 
@@ -158,8 +163,8 @@ class ReplacePopup(tk.Toplevel):
         self.text_replace.grid(row=1, column=1, sticky=tk.EW, padx=5)
         self.btn_next.grid(row=0, column=2, sticky=tk.EW, padx=(5, 15), pady=(15, 2))
         self.btn_replace.grid(row=1, column=2, sticky=tk.EW, padx=(5, 15), pady=2)        
-        self.btn_replace_all.grid(row=2, column=2, sticky=tk.EW, padx=(5, 15), pady=(2, 15))                
-        check_btn.grid(row=2, column=0, columnspan=2, sticky=tk.EW, padx=15)
+        self.btn_replace_all.grid(row=2, column=2, sticky=tk.EW, padx=(5, 15), pady=(2, 15))
+        check_btn.grid(row=2, column=0, columnspan=2, sticky=tk.EW, padx=15, pady=(5, 15))
 
         # other variables
         self.chars = 0
@@ -169,6 +174,9 @@ class ReplacePopup(tk.Toplevel):
         # configure text widget tags
         self.text.tag_configure('found', foreground='black', background='silver')
         self.text.tag_configure('found.focus', foreground='white', background='SystemHighlight')
+
+        # add additional bindings
+        self.bind("<Return>", self.ask_find_match)
 
     def cancel(self):
         """Cancel the request and return control to main window"""
@@ -188,7 +196,7 @@ class ReplacePopup(tk.Toplevel):
         self.text.tag_remove('found', '1.0', tk.END)
         self.text.tag_remove('found.focus', '1.0', tk.END)
 
-    def ask_find_match(self):
+    def ask_find_match(self, event=None):
         """Check for new searches, and route traffic by search types"""
         term = self.text_find.get()
         if term == '':
@@ -238,10 +246,12 @@ class ReplacePopup(tk.Toplevel):
             start, end = self.text.tag_nextrange('found', self.start, tk.END)
             self.text.tag_add('found.focus', start, end)
             self.text.mark_set(tk.INSERT, start)
+            self.text.see(start)
             self.start = end
         except ValueError:
             if self.start != '1.0':
                 self.start = '1.0'
+                self.text.see('1.0')
                 self.highlight_next_match()
 
     def find_replace_next(self):
@@ -281,6 +291,6 @@ if __name__ == '__main__':
     print('Testing...')
     
     w = TestWindow()
-    #FindPopup(w)
-    ReplacePopup(w)
+    FindPopup(w)
+    #ReplacePopup(w)
     w.mainloop()
