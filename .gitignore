@@ -124,4 +124,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# other
 /.vscode
+ion_plato.txt
