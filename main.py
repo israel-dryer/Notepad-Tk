@@ -11,18 +11,19 @@ from tkinter import font as tkfont
 from tkinter import filedialog, messagebox
 import pathlib
 import datetime
-from findreplace import FindPopup, ReplacePopup
-from fontselect import FontSelector
-from about import AboutMe
-from ribbon import Ribbon
-from statusbar import StatusBar
+from widgets.texttools import Find, Replace
+from widgets.fontselect import FontSelector
+from widgets.about import AboutMe
+from widgets.ribbon import Ribbon
+from widgets.statusbar import StatusBar
+
 
 class Notepad(tk.Tk):
     """A notepad application"""
     def __init__(self):
         super().__init__()
         self.withdraw()
-        self.iconbitmap('Notepad.ico')
+        self.iconbitmap('images/Notepad.ico')
 
         # file variables
         self.file = pathlib.Path.cwd() / 'untitled.txt'
@@ -153,6 +154,7 @@ class Notepad(tk.Tk):
             self.file = pathlib.Path(file)
             self.text.insert(tk.END, self.file.read_text())
             self.update_title()
+            self.status_bar.update_status()
 
     def save_file(self):
         """Save the currently open file"""
@@ -228,11 +230,11 @@ class Notepad(tk.Tk):
 
     def ask_find_next(self, event=None):
         """Create find next popup widget"""
-        self.findnext = FindPopup(self, self.text)
+        self.findnext = Find(self, self.text)
 
     def ask_find_replace(self, event=None):
         """Create replace popup widget"""
-        self.findreplace = ReplacePopup(self, self.text)        
+        self.findreplace = Replace(self, self.text)        
 
     def select_all(self):
         """Select all text in the text widget"""

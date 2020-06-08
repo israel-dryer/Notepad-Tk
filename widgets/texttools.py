@@ -1,14 +1,13 @@
 """
-    Find and Replace popup dialogues for handling find and replace for 
-    multiline text widgets
+    Find Text popup dialogues for finding, marking, and replacing text within text widget.
 
     Author: Israel Dryer
-    Modified: 2020-06-07
+    Modified: 2020-06-08
 """
 import tkinter as tk
 
 
-class FindPopup(tk.Toplevel):
+class Find(tk.Toplevel):
     """Find whole or partial words within a text widget"""
 
     def __init__(self, master, text_widget):
@@ -128,7 +127,7 @@ class FindPopup(tk.Toplevel):
                 self.highlight_next_match()
 
 
-class ReplacePopup(tk.Toplevel):
+class Replace(tk.Toplevel):
     """Find and replace words within a text widget"""
 
     def __init__(self, master, text_widget):
@@ -288,10 +287,10 @@ class TestWindow(tk.Tk):
         self.text.pack(fill=tk.BOTH, expand=tk.YES)
         self.text.insert(tk.END, 'This is a test. This is onlyatest.')
 
+
 if __name__ == '__main__':
     print('Testing...')
-    
+
     w = TestWindow()
-    FindPopup(w)
-    #ReplacePopup(w)
+    Find(w, w.text)
     w.mainloop()

@@ -21,7 +21,7 @@ class AboutMe(tk.Toplevel):
         self.focus_set()
 
         # image and application name
-        self.img = tk.PhotoImage(file='Notepad_32.png')
+        self.img = tk.PhotoImage(file='images/Notepad_32.png')
         self.top_frame = tk.Frame(self)
         lbl1 = tk.Label(self.top_frame, image=self.img, anchor=tk.W)
         lbl2 = tk.Label(self.top_frame, text='Notepad', font=('Arial Black', 16, 'bold'), fg='#444')
