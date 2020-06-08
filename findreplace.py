@@ -1,6 +1,9 @@
 """
     Find and Replace popup dialogues for handling find and replace for 
     multiline text widgets
+
+    Author: Israel Dryer
+    Modified: 2020-06-07
 """
 import tkinter as tk
 

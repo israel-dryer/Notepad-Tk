@@ -1,3 +1,11 @@
+"""
+    A simple notepad application with functionality for some formatting commands, font selection,
+    find & replace, etc...
+
+    Author: Israel Dryer
+    Modified: 2020-06-07
+"""
+
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import filedialog, messagebox
@@ -5,12 +13,15 @@ import pathlib
 import datetime
 from findreplace import FindPopup, ReplacePopup
 from fontselect import FontSelector
+from about import AboutMe
+from ribbon import Ribbon
+from statusbar import StatusBar
 
 class Notepad(tk.Tk):
     """A notepad application"""
     def __init__(self):
         super().__init__()
-        #self.tk_setPalette('#e6e6ea')
+        self.withdraw()
         self.iconbitmap('Notepad.ico')
 
         # file variables
@@ -66,14 +77,17 @@ class Notepad(tk.Tk):
         self.menu_format.add_command(label='Font...', command=self.ask_font_select)
 
         # help menu
-        self.menu_help.add_command(label='View Help', command=None)
-        self.menu_help.add_command(label='About Notepad', command=None)
+        self.menu_help.add_command(label='View Help', state=tk.DISABLED, command=None)
+        self.menu_help.add_command(label='About Notepad', command=self.about_me)
 
         # add cascading menus to main menu
         self.menu.add_cascade(label='File', menu=self.menu_file)
         self.menu.add_cascade(label='Edit', menu=self.menu_edit)
         self.menu.add_cascade(label='Format', menu=self.menu_format)
         self.menu.add_cascade(label='Help', menu=self.menu_help)
+
+        # add ribbon menu
+        self.ribbon = Ribbon(self)
 
         # setup text text widget
         self.yscrollbar = tk.Scrollbar(self, command=self.yscroll)
@@ -91,15 +105,20 @@ class Notepad(tk.Tk):
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.text.pack(fill=tk.BOTH, expand=tk.YES)
 
+        # add status bar
+        self.status_bar = StatusBar(self, self.text)
+
         # general callback binding
         # self.bind("<F3>", self.find_all_matches)
         self.bind("<Control-f>", self.ask_find_next)
         self.bind("<Control-h>", self.ask_find_replace)
+        self.bind("<F5>", self.get_datetime)
 
         # final setup
         self.update_title()
 
         self.eval('tk::PlaceWindow . center')
+        self.deiconify()
 
     #---SCROLLBAR CALLBACK-------------------------------------------------------------------------        
 
@@ -219,12 +238,13 @@ class Notepad(tk.Tk):
         """Select all text in the text widget"""
         self.text.tag_add(tk.SEL, '1.0', tk.END)
 
-    def get_datetime(self):
+    def get_datetime(self, event=None):
         """insert date and time at cursor position"""
         self.text.insert(tk.INSERT, datetime.datetime.now().strftime("%c"))
 
     #---FORMAT MENU CALLBACKS------------------------------------------------------------------------
 
+    # TODO `word_wrap` and `block_cursor` will not call from button press... investigating
     def word_wrap(self):
         """Toggle word wrap in text widget"""
         if self.wrap_var.get():
@@ -244,6 +264,11 @@ class Notepad(tk.Tk):
         f = FontSelector(self)
         tab_width = self.font.measure(' ' * 4)
         self.text.configure(tabs=(tab_width,))        
+
+    #---OTHER--------------------------------------------------------------------------------------
+    def about_me(self):
+        """Application and license info"""
+        AboutMe(self)
 
  
 if __name__ == '__main__':
