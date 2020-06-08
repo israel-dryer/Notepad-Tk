@@ -12,7 +12,7 @@ class Ribbon(tk.Frame):
             filepath = pathlib.Path() / 'images' / 'Medium' / file
             if filepath.suffix == '.png':
                 self.images[filepath.stem] = tk.PhotoImage(file=filepath)
-        
+
         # File Menu
         Button(self, self.images['new'], command=master.new_file).pack(side=tk.LEFT)
         Button(self, self.images['open'], command=master.open_file).pack(side=tk.LEFT)
@@ -33,10 +33,13 @@ class Ribbon(tk.Frame):
         Button(self, self.images['replace'], command=master.ask_find_replace).pack(side=tk.LEFT)
         ttk.Separator(self, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y)
 
-        # TODO convert `wrap` and `block` to toggle buttons, and fix the callbacks
-        Button(self, self.images['wrap'], command=master.word_wrap).pack(side=tk.LEFT)
-        Button(self, self.images['block'], command=master.block_cursor).pack(side=tk.LEFT)
-        
+        wrap_cb = tk.Checkbutton(self, image=self.images['wrap'], indicatoron=False, bd=0,
+                                 variable=master.wrap_var, command=master.word_wrap)
+        wrap_cb.pack(side=tk.LEFT)
+        block_cb = tk.Checkbutton(self, image=self.images['block'], indicatoron=False, bd=0,
+                                  variable=master.block_var, command=master.block_cursor)
+        block_cb.pack(side=tk.LEFT)
+
         Button(self, self.images['font'], command=master.ask_font_select).pack(side=tk.LEFT)
         ttk.Separator(self, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y)
 
@@ -45,6 +48,24 @@ class Ribbon(tk.Frame):
         Button(self, self.images['exit'], command=master.quit_application).pack(side=tk.LEFT)        
 
         self.pack(side=tk.TOP, fill=tk.X)
+
+        # add overrelief to checkbuttons
+        wrap_cb.bind("<Enter>", self.on_enter)
+        wrap_cb.bind("<Leave>", self.on_leave)
+        block_cb.bind("<Enter>", self.on_enter)
+        block_cb.bind("<Leave>", self.on_leave)
+
+    @staticmethod
+    def on_enter(event):
+        """Execute on mouse enter"""
+        widget = event.widget
+        widget.configure(relief=tk.RIDGE, bd=1, highlightthickness=0)
+
+    @staticmethod
+    def on_leave(event):
+        """Execute on mouse leave"""
+        widget = event.widget
+        widget.configure(relief=tk.FLAT, bd=0, highlightthickness=1)
 
 class Button(tk.Button):
     """Ribbon Button"""

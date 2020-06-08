@@ -44,7 +44,7 @@ class StatusBar(tk.Frame):
         self.text.bind("<KeyRelease>", self.update_status)
         self.text.bind("<ButtonRelease-1>", self.update_status)
         self.update_status() # set initial status
-        self.pack(fill=tk.X, expand=tk.YES, padx=2, pady=2)        
+        self.pack(side=tk.BOTTOM, fill=tk.X, padx=2, pady=2)        
 
     def update_status(self, event=None):
         """Update Status Bar"""

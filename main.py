@@ -24,6 +24,7 @@ class Notepad(tk.Tk):
         super().__init__()
         self.withdraw()
         self.iconbitmap('images/Notepad.ico')
+        self.wm_state('zoomed')  # start application zoomed
 
         # file variables
         self.file = pathlib.Path.cwd() / 'untitled.txt'
@@ -52,7 +53,7 @@ class Notepad(tk.Tk):
         self.menu_file.add_command(label='Save As...', command=self.save_file_as)
         self.menu_file.add_separator()
         self.menu_file.add_command(label='Exit', command=self.quit_application)
-        
+
         # edit menu
         self.menu_edit.add_command(label='Undo', accelerator='Ctrl+Z', command=self.undo_edit)
         self.menu_edit.add_command(label='Redo', accelerator='Ctrl+Y', command=self.redo_edit)
@@ -91,10 +92,11 @@ class Notepad(tk.Tk):
         self.ribbon = Ribbon(self)
 
         # setup text text widget
-        self.yscrollbar = tk.Scrollbar(self, command=self.yscroll)
-        self.text = tk.Text(self, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
+        self.text_frame = tk.Frame(self)
+        self.yscrollbar = tk.Scrollbar(self.text_frame, command=self.yscroll)
+        self.text = tk.Text(self.text_frame, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
             autoseparator=True, yscrollcommand=self.yscrollbar.set, blockcursor=False, padx=5, pady=10)
-        #self.yscrollbar.bind("<B1-Motion>", self.yscroll)            
+         
         # set default tab size to 4 characters
         self.font = tkfont.Font(family='Courier New', size=12, weight=tkfont.NORMAL, slant=tkfont.ROMAN, underline=False, overstrike=False)        
         self.text.configure(font=self.font)
@@ -105,12 +107,12 @@ class Notepad(tk.Tk):
         # pack all widget to screen
         self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.text.pack(fill=tk.BOTH, expand=tk.YES)
+        self.text_frame.pack(fill=tk.BOTH, expand=tk.YES)
 
         # add status bar
         self.status_bar = StatusBar(self, self.text)
 
         # general callback binding
-        # self.bind("<F3>", self.find_all_matches)
         self.bind("<Control-f>", self.ask_find_next)
         self.bind("<Control-h>", self.ask_find_replace)
         self.bind("<F5>", self.get_datetime)
@@ -118,7 +120,7 @@ class Notepad(tk.Tk):
         # final setup
         self.update_title()
 
-        self.eval('tk::PlaceWindow . center')
+        #self.eval('tk::PlaceWindow . center')
         self.deiconify()
 
     #---SCROLLBAR CALLBACK-------------------------------------------------------------------------        
@@ -249,7 +251,8 @@ class Notepad(tk.Tk):
     # TODO `word_wrap` and `block_cursor` will not call from button press... investigating
     def word_wrap(self):
         """Toggle word wrap in text widget"""
-        if self.wrap_var.get():
+        w = self.wrap_var.get()
+        if w:
             self.text.configure(wrap=tk.WORD)
         else:
             self.text.configure(wrap=tk.NONE)

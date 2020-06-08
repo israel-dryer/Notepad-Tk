@@ -125,5 +125,5 @@ dmypy.json
 .pyre/
 
 # other
-/.vscode
+.vscode/
 demo.txt
