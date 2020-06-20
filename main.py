@@ -5,18 +5,17 @@
     Author: Israel Dryer
     Modified: 2020-06-07
 """
-
-import tkinter as tk
-from tkinter import font as tkfont
-from tkinter import filedialog, messagebox
 import pathlib
 import datetime
+import tkinter as tk
+from tkinter import font as tkfont
+from tkinter.scrolledtext import ScrolledText
+from tkinter import filedialog, messagebox
 from widgets.texttools import Find, Replace
 from widgets.fontselect import FontSelector
 from widgets.about import AboutMe
 from widgets.ribbon import Ribbon
 from widgets.statusbar import StatusBar
-
 
 class Notepad(tk.Tk):
     """A notepad application"""
@@ -24,7 +23,10 @@ class Notepad(tk.Tk):
         super().__init__()
         self.withdraw()
         self.iconbitmap('images/Notepad.ico')
-        self.wm_state('zoomed')  # start application zoomed
+        
+        # check platform & set zoom status
+        platform = self.tk.call('tk', 'windowingsystem')
+        self.wm_state('zoomed') if platform == 'win32' else self.attributes('-zoomed', 1)
 
         # file variables
         self.file = pathlib.Path.cwd() / 'untitled.txt'
@@ -93,9 +95,8 @@ class Notepad(tk.Tk):
 
         # setup text text widget
         self.text_frame = tk.Frame(self)
-        self.yscrollbar = tk.Scrollbar(self.text_frame, command=self.yscroll)
-        self.text = tk.Text(self.text_frame, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
-            autoseparator=True, yscrollcommand=self.yscrollbar.set, blockcursor=False, padx=5, pady=10)
+        self.text = ScrolledText(self.text_frame, wrap=tk.WORD, font='-size 14', undo=True, maxundo=10,
+            autoseparator=True, blockcursor=False, padx=5, pady=10)
          
         # set default tab size to 4 characters
         self.font = tkfont.Font(family='Courier New', size=12, weight=tkfont.NORMAL, slant=tkfont.ROMAN, underline=False, overstrike=False)        
@@ -105,7 +106,6 @@ class Notepad(tk.Tk):
         self.text.insert(tk.END, self.file.read_text() if self.file.is_file() else '')
 
         # pack all widget to screen
-        self.yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.text.pack(fill=tk.BOTH, expand=tk.YES)
         self.text_frame.pack(fill=tk.BOTH, expand=tk.YES)
 
@@ -122,15 +122,6 @@ class Notepad(tk.Tk):
 
         #self.eval('tk::PlaceWindow . center')
         self.deiconify()
-
-    #---SCROLLBAR CALLBACK-------------------------------------------------------------------------        
-
-    def yscroll(self, event, *args):
-        """Move scrollbar when slider is dragged or pointers are clicked"""
-        if event == 'moveto':
-            self.text.yview_moveto(*args)
-        else:
-            self.text.yview_scroll(*args)
 
     #---FILE MENU CALLBACKS------------------------------------------------------------------------
 
@@ -248,7 +239,6 @@ class Notepad(tk.Tk):
 
     #---FORMAT MENU CALLBACKS------------------------------------------------------------------------
 
-    # TODO `word_wrap` and `block_cursor` will not call from button press... investigating
     def word_wrap(self):
         """Toggle word wrap in text widget"""
         w = self.wrap_var.get()
@@ -275,7 +265,6 @@ class Notepad(tk.Tk):
         """Application and license info"""
         AboutMe(self)
 
- 
 if __name__ == '__main__':
     notepad = Notepad()
     notepad.mainloop()
